@@ -18,7 +18,8 @@ This project delivers an end-to-end forecasting pipeline that resamples high-fre
 - Test Set Root Mean Squared Error (RMSE): 0.4791 kWh (17.7 percent reduction vs. 1-hour persistence).
 - Explained Variance (R-Squared): 0.5390 on held-out test data.
 - Multi-Horizon Recursive Rollout: Validated across 1-hour, 6-hour, 24-hour, and 48-hour horizons using a disjoint 72-hour rolling-origin backtest.
-- Automated Test Suite: 116 passing unit, integration, and UI acceptance tests.
+- Live Streaming Prediction Engine: Sequential historical replay simulation, next-hour forecasting, and real-time error evaluation.
+- Automated Test Suite: 155 passing unit, integration, and UI acceptance tests.
 
 ---
 
@@ -159,6 +160,31 @@ Multi-step forward forecasting is evaluated via rolling-origin backtesting acros
 | 48 Hours | 0.2783 | 0.4216 | 0.3979 | 0.6405 | +30.06% |
 
 Note: Horizon 48-hour MAE is lower than Horizon 24-hour MAE due to residential diurnal consumption patterns and baseline volatility differences across the sampling grid, rather than increased long-term precision.
+
+---
+
+## Live Energy Consumption Monitoring and Streaming Prediction (Phase 6)
+
+To validate operational deployment readiness prior to connecting physical smart-meter hardware or live IoT streams, Phase 6 implements an extensible streaming inference and real-time evaluation engine:
+
+1. Pluggable Data-Source Architecture:
+   - Defined `BaseEnergyDataSource` abstract contract in `src/live_source.py` to decouple data ingestion from inference mechanics.
+   - Implemented `HistoricalReplaySource` to sequentially stream hourly observations from benchmark records.
+   - Architecture is modular: connecting an authorized smart-meter REST API or MQTT broker requires implementing the same interface without modifying prediction logic.
+
+2. Strict Temporal Isolation and Lookahead Protection:
+   - Live inference at simulation clock T_origin strictly accesses observations at or before T_origin. Future readings are strictly quarantined.
+   - Next-hour predictions target T_target = T_origin + 1 hour.
+
+3. Explicit Gap Detection and Non-Zero Policy:
+   - When historical data contains unrecorded intervals, the stream emits an explicit gap measurement (is_valid=False, energy_kwh=NaN).
+   - Missing consumption is never fabricated as zero or synthetically interpolated.
+   - If lookback history contains gaps or fewer than 168 hours, autoregressive forecasts are withheld until 168 contiguous valid hours re-accumulate.
+
+4. Live Prediction and Evaluation Engine:
+   - `LivePredictionEngine` in `src/live_engine.py` tracks pending predictions and matches them against subsequent observations as they arrive.
+   - Calculates live point errors (absolute error, signed residual bias) and rolling metrics (MAE, RMSE, Mean Bias Error).
+   - Metrics are computed strictly across verified prediction-actual pairs, excluding warm-up history.
 
 ---
 
@@ -338,7 +364,7 @@ python -m compileall -q src tests main.py app.py
 1. Single-Household Scope: The dataset reflects power consumption from a single residence in Sceaux, France between 2006 and 2010. Findings demonstrate model validity for this consumer but cannot be generalized to commercial buildings, industrial facilities, or distinct climate zones without localized retraining.
 2. Contiguous Lookback Constraint: Computing 168-hour lags and 24-hour rolling averages strictly requires 168 contiguous historical hours. Live telemetry dropouts require fallback mechanisms (such as calendar-only models) in production.
 3. Recursive Error Compounding: Multi-step autoregressive forecasting feeds earlier predictions into subsequent lag and rolling terms. Forecast errors naturally accumulate over longer horizons.
-4. Historical Research Context: All forecasts and evaluations represent retrospective experiments on historical data and do not constitute live real-time predictions for the current year.
+4. Historical Streaming Simulation Context: Live monitoring currently operates in historical replay simulation mode using sequential readings from the 2006 to 2010 benchmark dataset. While the operational engine and data-source interfaces are designed for production telemetry streams, current demonstrations replay historical benchmark records rather than connecting to a physical 2026 grid sensor.
 
 ---
 
