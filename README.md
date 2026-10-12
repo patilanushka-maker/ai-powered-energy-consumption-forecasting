@@ -216,12 +216,27 @@ The figure below illustrates the progression of MAE across 1-hour, 6-hour, 24-ho
 
 ![Recursive Multi-Horizon Backtesting Performance](images/backtest_error_by_horizon.png)
 
-### Dashboard Screenshots
-Local dashboard captures can be placed directly in the images/ directory:
+### Streamlit Dashboard Interface
 
-- Dashboard Overview Interface: [images/dashboard_overview.png](images/dashboard_overview.png)
-- Multi-Step Forecast Rollout: [images/forecast_rollout.png](images/forecast_rollout.png)
-- Model Benchmark Scorecard: [images/model_evaluation.png](images/model_evaluation.png)
+#### 1. System Overview and Model Performance Summary
+Displays dataset scope, baseline comparisons, test metrics, and architectural provenance.
+
+![Dashboard Overview](images/P3%20Out%20S1.jpg)
+
+#### 2. Historical Energy Consumption Explorer
+Interactive historical date range filter with dynamic consumption metrics and hourly load curves.
+
+![Historical Energy Consumption Explorer](images/P3%20Out%20S2.jpg)
+
+#### 3. Multi-Step Recursive Forecasting Configuration
+Interactive horizon selection (24h, 48h, 168h) with forecast origin metadata and lookback boundaries.
+
+![Multi-Step Recursive Forecasting Configuration](images/P3%20Out%20S3.jpg)
+
+#### 4. Trajectory Visualization and Forward Projection Rollout
+Visual comparison of the preceding 48 hours of actual consumption alongside the forward recursive model forecast and aggregate demand estimates.
+
+![Trajectory Visualization](images/P3%20Out%20S4.jpg)
 
 ---
 
@@ -233,8 +248,8 @@ Local dashboard captures can be placed directly in the images/ directory:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/AI-Powered-Energy-Consumption-Forecasting.git
-cd AI-Powered-Energy-Consumption-Forecasting
+git clone https://github.com/patilanushka-maker/ai-powered-energy-consumption-forecasting.git
+cd ai-powered-energy-consumption-forecasting
 ```
 
 ### 2. Create and Activate a Virtual Environment
