@@ -184,6 +184,11 @@ The figure below illustrates Random Forest predictions versus actual consumption
 
 ![Model Evaluation Plot](images/phase4a_actual_vs_predicted.png)
 
+### Recursive Multi-Horizon Backtesting Performance
+The figure below illustrates the progression of MAE across 1-hour, 6-hour, 24-hour, and 48-hour horizons compared against origin persistence:
+
+![Recursive Multi-Horizon Backtesting Performance](images/backtest_error_by_horizon.png)
+
 ### Dashboard Screenshots
 Local dashboard captures can be placed directly in the images/ directory:
 
