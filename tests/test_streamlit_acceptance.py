@@ -29,8 +29,8 @@ def test_dashboard_full_acceptance_and_rendering():
     # 1. Zero exceptions
     assert len(at.exception) == 0, f"App threw unexpected exceptions: {[e.value for e in at.exception]}"
 
-    # 2. All 6 tabs exist
-    assert len(at.tabs) == 6
+    # 2. All 7 tabs exist
+    assert len(at.tabs) == 7
     tab_labels = [t.label for t in at.tabs]
     assert any("Overview" in label for label in tab_labels)
     assert any("Historical" in label for label in tab_labels)
@@ -38,6 +38,7 @@ def test_dashboard_full_acceptance_and_rendering():
     assert any("Evaluation" in label for label in tab_labels)
     assert any("Backtest" in label for label in tab_labels)
     assert any("Quality" in label for label in tab_labels)
+    assert any("Live Monitoring" in label for label in tab_labels)
 
     # 3. Check Overview metrics
     metric_labels = [m.label for m in at.metric]
@@ -135,3 +136,68 @@ def test_dashboard_historical_date_range_interaction():
     # Metric should reflect narrower range
     hours_metric_updated = next(m for m in at.metric if m.label == "Selected Hours")
     assert hours_metric_updated.value != initial_hours_val
+
+
+def test_live_monitoring_tab_controls_and_kpis():
+    """Verify Live Monitoring tab renders controls, steps forward, and updates metrics."""
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    assert len(at.exception) == 0
+
+    # Locate Live Monitoring simulation controls
+    btn_step_1h = next(b for b in at.button if "Step 1 Hour" in b.label)
+    btn_advance_24h = next(b for b in at.button if "Advance 24 Hours" in b.label)
+    btn_reset = next(b for b in at.button if "Reset Simulation" in b.label)
+
+    assert btn_step_1h is not None
+    assert btn_advance_24h is not None
+    assert btn_reset is not None
+
+    # Step 1 hour
+    btn_step_1h.click().run(timeout=30)
+    assert len(at.exception) == 0
+
+    # Check KPI labels present
+    metric_labels = [m.label for m in at.metric]
+    assert "Latest Observed Measurement" in metric_labels
+    assert "Next-Hour Forecast" in metric_labels
+    assert "Consecutive Valid History" in metric_labels
+    assert "Latest Matched Error" in metric_labels
+
+    # Verify simulation advanced to test split start: 2010-04-18 18:00:00
+    meas_metric = next(m for m in at.metric if m.label == "Latest Observed Measurement")
+    assert "kWh" in meas_metric.value
+
+    pred_metric = next(m for m in at.metric if m.label == "Next-Hour Forecast")
+    assert "kWh" in pred_metric.value
+
+
+def test_live_monitoring_advance_and_reset():
+    """Verify advancing 24 hours accumulates evaluations and reset clears them."""
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    assert len(at.exception) == 0
+
+    btn_advance_24h = next(b for b in at.button if "Advance 24 Hours" in b.label)
+    btn_advance_24h.click().run(timeout=45)
+    assert len(at.exception) == 0
+
+    # Scorecard metrics must be populated
+    sc_metric_labels = [m.label for m in at.metric]
+    assert "Live MAE" in sc_metric_labels
+    assert "Live RMSE" in sc_metric_labels
+    assert "Live Mean Bias Error" in sc_metric_labels
+    assert "Verified Sample Count" in sc_metric_labels
+
+    count_metric = next(m for m in at.metric if m.label == "Verified Sample Count")
+    assert "pair" in count_metric.value
+
+    # Reset simulation
+    btn_reset = next(b for b in at.button if "Reset Simulation" in b.label)
+    btn_reset.click().run(timeout=30)
+    assert len(at.exception) == 0
+
+    # After reset, verified sample count should return to 0
+    count_metric_after_reset = next(m for m in at.metric if m.label == "Verified Sample Count")
+    assert "0 verified pairs" in count_metric_after_reset.value
+

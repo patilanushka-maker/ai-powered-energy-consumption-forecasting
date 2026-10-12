@@ -164,7 +164,7 @@ Note: Horizon 48-hour MAE is lower than Horizon 24-hour MAE due to residential d
 
 ## Interactive Streamlit Web Dashboard
 
-The Phase 5 interactive dashboard is organized into six functional modules:
+The Phase 5 and Phase 6 interactive dashboard is organized into seven functional modules:
 
 1. Overview: Executive summary, dataset scope, physical energy calculation, and headline test KPIs.
 2. Historical Consumption: Interactive time-series explorer with date filtering, daily summary metrics, and table expanders.
@@ -172,6 +172,7 @@ The Phase 5 interactive dashboard is organized into six functional modules:
 4. Model Evaluation: Head-to-head scorecard comparing Random Forest, Persistence, and Seasonal Naive across common timestamps.
 5. Recursive Backtesting: Multi-horizon progression tables and origin accounting.
 6. Quality and Limitations: Detailed analysis of single-household boundaries, lookback constraints, and non-generalizability.
+7. Live Monitoring and Prediction: Sequential streaming simulation, next-hour energy forecasting, live prediction tracking against arriving actuals, and health audits.
 
 ---
 
@@ -286,7 +287,7 @@ Run all tests:
 ```bash
 python -m pytest -q
 ```
-Expected output: 116 passed.
+Expected output: 155 passed.
 
 Verify Python syntax and compilation:
 ```bash
@@ -323,9 +324,11 @@ python -m compileall -q src tests main.py app.py
 |   |-- evaluate.py           # Evaluation metrics and benchmark comparison module
 |   |-- feature_engineering.py# Temporal, lag, and rolling feature extraction
 |   |-- forecast.py           # Multi-step recursive forecasting inference engine
+|   |-- live_engine.py        # Live prediction coordinator and error evaluation engine
+|   |-- live_source.py        # Streaming data source interfaces and historical replay
 |   |-- preprocessing.py      # Cleaning, deduplication, and hourly resampling
 |   `-- train.py              # Chronological splitting, baselines, and model training
-`-- tests/                    # Automated unit, integration, and acceptance tests (116 tests)
+`-- tests/                    # Automated unit, integration, and acceptance tests (155 tests)
 ```
 
 ---

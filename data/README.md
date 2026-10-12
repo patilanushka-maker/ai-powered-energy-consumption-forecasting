@@ -23,7 +23,7 @@ data/
 - **Dataset**: Individual Household Electric Power Consumption Dataset
 - **Provider**: UCI Machine Learning Repository
 - **Direct Link**: [UCI Household Power Consumption](https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption)
-- **Timeframe**: December 2006 – November 2010 (47 months, 2,075,259 observations)
+- **Timeframe**: December 2006 - November 2010 (47 months, 2,075,259 observations)
 - **Sampling Frequency**: 1-minute intervals
 - **Expected Raw Placement**:
   ```
@@ -47,7 +47,7 @@ To convert minute-level power readings into energy over an hour:
 
 ---
 
-## ️ Missing Data, Incomplete Hours, and Duplicate Policies
+##  Missing Data, Incomplete Hours, and Duplicate Policies
 
 ### 1. Hourly Completeness & Coverage Policy (`min_hourly_coverage=0.90`)
 - **Threshold**: Requires at least 90% valid minute readings (i.e., $\ge 54$ valid minutes out of 60) for an hour to be accepted.

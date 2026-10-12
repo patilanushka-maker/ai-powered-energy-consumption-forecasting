@@ -18,11 +18,18 @@ import streamlit as st
 from src.dashboard_utils import (
     compute_summary_statistics,
     filter_data_by_date_range,
+    format_event_log_table,
+    format_live_metrics_summary,
+    format_measurement_kpi,
+    format_prediction_kpi,
     load_metrics_report,
     load_processed_data,
     prepare_forecast_plot_data,
+    prepare_live_monitoring_chart_data,
 )
 from src.forecast import generate_forecast, load_forecasting_model
+from src.live_engine import LivePredictionEngine
+from src.live_source import HistoricalReplaySource
 
 # Constants & Paths
 DATA_PATH = Path("data/processed/hourly_energy.csv")
@@ -410,12 +417,227 @@ def render_limitations_section() -> None:
 
     st.markdown("### 3. Missing Data & Hourly Completeness Policy")
     st.write(
-        """
-        - During preprocessing, hours meeting the $\\ge 90\\%$ valid-minute threshold (54+ minutes) are resampled using the observed mean active power.
+        r"""
+        - During preprocessing, hours meeting the $\ge 90\%$ valid-minute threshold (54+ minutes) are resampled using the observed mean active power.
         - Hours falling below 90% coverage are excluded entirely (446 intervals across the 4-year span).
         - Unobserved hours are **never** filled with zero or synthetically fabricated, ensuring the ML model is trained exclusively on genuine physical consumption.
         """
     )
+
+
+# =========================================================================
+# Section 7: Live Monitoring & Prediction (Phase 6D)
+# =========================================================================
+
+def render_live_monitoring_section(model_payload: Dict[str, Any]) -> None:
+    """Render Phase 6 Live Monitoring and Streaming Prediction section."""
+    st.header("Live Energy Consumption Monitoring & Prediction")
+    st.markdown(
+        "**Sequential historical streaming demonstration, next-hour forecasting, and live error scoring.**"
+    )
+
+    # Transparency Banner
+    st.info(
+        "**DATA SOURCE MODE: HISTORICAL REPLAY SIMULATION (2006-2010 DATASET)**\n\n"
+        "This console simulates incoming sequential smart-meter readings using the historical "
+        "UCI Single Household dataset (December 2006 to November 2010). All incoming measurements, "
+        "lookbacks, and evaluation metrics originate from historical records. "
+        "This simulation strictly models real-time operational inference architecture prior to "
+        "connecting an authorized physical smart meter or IoT telemetry stream. "
+        "It does not represent current 2026 measurements."
+    )
+
+    # Initialize session state engine safely
+    if "live_engine" not in st.session_state:
+        start_ts = "2010-04-18 18:00:00"  # Held-out test split start
+        source = HistoricalReplaySource(
+            data_or_path=DATA_PATH,
+            start_timestamp=start_ts,
+            preload_warmup_history=True,
+            step_mode="hourly_clock",
+        )
+        engine = LivePredictionEngine(
+            data_source=source,
+            model_or_path=model_payload,
+            min_lookback_hours=168,
+            min_evaluation_samples=5,
+            auto_generate_prediction=True,
+        )
+        st.session_state["live_engine"] = engine
+        st.session_state["live_start_timestamp"] = start_ts
+        st.session_state["live_last_step_status"] = "INITIALIZED"
+
+    engine: LivePredictionEngine = st.session_state["live_engine"]
+
+    # Simulation Controls Bar
+    st.markdown("### Simulation Controls")
+    col_c1, col_c2, col_c3, col_c4 = st.columns([1.5, 1.5, 1.5, 3.5])
+
+    has_more = engine.has_more if hasattr(engine, "has_more") else True
+    if hasattr(engine, "_data_source"):
+        has_more = engine._data_source.has_more
+
+    with col_c1:
+        if st.button("Step 1 Hour", key="btn_step_1h", disabled=not has_more):
+            step_res = engine.step()
+            st.session_state["live_last_step_status"] = step_res["status"]
+
+    with col_c2:
+        if st.button("Advance 24 Hours", key="btn_step_24h", disabled=not has_more):
+            res_list = engine.run_steps(24)
+            if res_list:
+                st.session_state["live_last_step_status"] = res_list[-1]["status"]
+
+    with col_c3:
+        if st.button("Reset Simulation", key="btn_reset_live"):
+            engine.reset(start_timestamp=st.session_state.get("live_start_timestamp", "2010-04-18 18:00:00"))
+            st.session_state["live_last_step_status"] = "RESET"
+
+    with col_c4:
+        sim_ts = engine.current_simulation_timestamp
+        sim_clock_str = str(sim_ts) if sim_ts is not None else "Ready to start (Press Step 1 Hour)"
+        health = engine.get_history_health()
+        st.markdown(
+            f"**Simulation Clock**: `{sim_clock_str}`  \n"
+            f"**History Buffer**: `{health['status']}` ({health['available_hours']}/168 hours)"
+        )
+
+    st.markdown("---")
+
+    # Status feedback alerts
+    last_status = st.session_state.get("live_last_step_status", "")
+    if last_status == "END_OF_STREAM":
+        st.warning("Data stream exhausted: Reached the end of the available historical dataset.")
+    elif last_status == "GAP_DETECTED":
+        st.info(
+            "Missing interval encountered in historical records. "
+            "Forecasts are withheld without zero-filling until 168 contiguous hours re-accumulate."
+        )
+    elif last_status == "SKIPPED_INSUFFICIENT_HISTORY":
+        st.info("Accumulating history buffer: 168 contiguous hours are required before generating predictions.")
+
+    # KPI Metric Cards
+    latest_meas = engine.latest_measurement
+    latest_pred = engine.latest_prediction
+    latest_eval = engine.latest_evaluation
+    meas_kpi = format_measurement_kpi(latest_meas)
+    pred_kpi = format_prediction_kpi(latest_pred)
+
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    with kpi1:
+        st.metric(
+            label="Latest Observed Measurement",
+            value=meas_kpi["energy_str"],
+            help=f"Timestamp: {meas_kpi['timestamp_str']} | Completeness: {meas_kpi['coverage_str']}",
+        )
+        st.caption(f"Timestamp: `{meas_kpi['timestamp_str']}`")
+
+    with kpi2:
+        st.metric(
+            label="Next-Hour Forecast",
+            value=pred_kpi["predicted_str"],
+            help=f"Target: {pred_kpi['target_str']} | Status: {pred_kpi['status_str']}",
+        )
+        st.caption(f"Target: `{pred_kpi['target_str']}`")
+
+    with kpi3:
+        st.metric(
+            label="Consecutive Valid History",
+            value=f"{health['available_hours']} / 168 Hours",
+            help="Contiguous lookback observations required for lag_168 without lookahead.",
+        )
+        st.caption(f"Health Status: `{health['status']}`")
+
+    with kpi4:
+        if latest_eval is not None:
+            err_val_str = f"{latest_eval.absolute_error_kwh:.3f} kWh"
+            bias_str = f"{latest_eval.signed_error_kwh:+.3f} kWh"
+        else:
+            err_val_str = "Pending"
+            bias_str = "Awaiting target hour"
+        st.metric(
+            label="Latest Matched Error",
+            value=err_val_str,
+            delta=bias_str if latest_eval is not None else None,
+            delta_color="inverse",
+            help="Absolute forecast error evaluated when actual reading arrived at target timestamp.",
+        )
+        st.caption("Signed error delta: (Predicted - Actual)")
+
+    st.markdown("---")
+
+    # Visualizations
+    st.markdown("### Streaming Trajectory and Telemetry Tracking")
+
+    # Lookback history DataFrame from data source
+    history_lookback = engine._data_source.get_lookback_history(hours=48)
+    chart_df = prepare_live_monitoring_chart_data(
+        history_df=history_lookback,
+        evaluation_history=engine.evaluation_history,
+        next_prediction=latest_pred,
+        lookback_hours=48,
+    )
+
+    if len(chart_df) > 0 and "timestamp" in chart_df.columns:
+        chart_data = chart_df.set_index("timestamp")
+        st.line_chart(
+            chart_data,
+            color=["#718096", "#3182CE", "#E53E3E"],
+        )
+        st.caption(
+            "Grey: Historical Observed Actuals | Blue: Past Model Predictions (at target timestamps) | Red: Next-Hour Forecast."
+        )
+    else:
+        st.info("No measurements loaded yet. Click 'Step 1 Hour' above to start the simulation.")
+
+    # 24-Hour Forward Forecast Section
+    with st.expander("Generate 24-Hour Recursive Forward Projection from Current Origin", expanded=False):
+        if health["status"] == "HEALTHY" and latest_meas is not None:
+            try:
+                fc_24 = engine.generate_multi_hour_forecast(24)
+                if fc_24 is not None and len(fc_24) > 0:
+                    st.line_chart(fc_24.set_index("timestamp")[["forecast_energy_kwh"]])
+                    c_f1, c_f2, c_f3 = st.columns(3)
+                    c_f1.metric("24h Projected Total", f"{fc_24['forecast_energy_kwh'].sum():.2f} kWh")
+                    c_f2.metric("24h Projected Mean", f"{fc_24['forecast_energy_kwh'].mean():.3f} kWh")
+                    c_f3.metric("24h Peak Demand", f"{fc_24['forecast_energy_kwh'].max():.3f} kWh")
+            except Exception as exc:
+                st.warning(f"Could not generate 24h forward projection: {exc}")
+        else:
+            st.info("24-hour forward projection requires a healthy 168-hour lookback window.")
+
+    st.markdown("---")
+
+    # Live Evaluation Scorecard
+    st.markdown("### Live Evaluation Scorecard")
+    metrics = engine.get_evaluation_metrics()
+    metrics_formatted = format_live_metrics_summary(metrics)
+
+    sc1, sc2, sc3, sc4 = st.columns(4)
+    with sc1:
+        st.metric("Live MAE", metrics_formatted["mae_str"])
+    with sc2:
+        st.metric("Live RMSE", metrics_formatted["rmse_str"])
+    with sc3:
+        st.metric("Live Mean Bias Error", metrics_formatted["mbe_str"])
+    with sc4:
+        st.metric("Verified Sample Count", metrics_formatted["count_str"])
+
+    st.caption(
+        f"**Sample Reliability Notice**: {metrics_formatted['note_str']}  \n"
+        "Small-sample metrics are strictly preliminary. Reliable statistical confidence requires "
+        "continuous evaluation across hundreds of hours spanning diverse diurnal and seasonal cycles."
+    )
+
+    st.markdown("---")
+
+    # Audit & Event Log Table
+    with st.expander("Chronological Prediction & Evaluation Audit Log", expanded=False):
+        log_table = format_event_log_table(engine.prediction_history, engine.evaluation_history, max_rows=50)
+        if len(log_table) > 0:
+            st.dataframe(log_table, use_container_width=True)
+        else:
+            st.info("No prediction events logged yet. Advance the simulation to generate events.")
 
 
 # =========================================================================
@@ -430,36 +652,37 @@ def main() -> None:
     try:
         df = get_historical_data()
     except Exception as exc:
-        st.error(f"❌ Critical Failure: Unable to load historical dataset: {exc}")
+        st.error(f"Critical Failure: Unable to load historical dataset: {exc}")
         return
 
     try:
         model_payload = get_model_artifact()
     except Exception as exc:
-        st.error(f"❌ Critical Failure: Unable to load trained model artifact: {exc}")
+        st.error(f"Critical Failure: Unable to load trained model artifact: {exc}")
         return
 
     try:
         phase4a_metrics = get_phase4a_metrics()
     except Exception as exc:
-        st.error(f"❌ Critical Failure: Unable to load Phase 4A metrics: {exc}")
+        st.error(f"Critical Failure: Unable to load Phase 4A metrics: {exc}")
         return
 
     try:
         backtest_metrics = get_backtest_metrics()
     except Exception as exc:
-        st.error(f"❌ Critical Failure: Unable to load backtest metrics: {exc}")
+        st.error(f"Critical Failure: Unable to load backtest metrics: {exc}")
         return
 
-    # Navigation Tabs
-    tab_overview, tab_history, tab_forecast, tab_eval, tab_backtest, tab_limits = st.tabs(
+    # Navigation Tabs (7 tabs)
+    tab_overview, tab_history, tab_forecast, tab_eval, tab_backtest, tab_limits, tab_live = st.tabs(
         [
-            "🏠 Overview",
-            "📈 Historical Consumption",
-            "⚡ Forecasting",
-            "📊 Model Evaluation",
-            "🔄 Recursive Backtest",
-            "⚠️ Quality & Limitations",
+            "Overview",
+            "Historical Consumption",
+            "Forecasting",
+            "Model Evaluation",
+            "Recursive Backtest",
+            "Quality & Limitations",
+            "Live Monitoring & Prediction",
         ]
     )
 
@@ -481,6 +704,8 @@ def main() -> None:
     with tab_limits:
         render_limitations_section()
 
+    with tab_live:
+        render_live_monitoring_section(model_payload)
 
 if __name__ == "__main__":
     main()
