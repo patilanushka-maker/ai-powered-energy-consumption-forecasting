@@ -1,0 +1,60 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets
+.env
+*.env
+.env.*
+!.env.example
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Data directories (ignore large raw datasets; preserve structure and processed dataset)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/hourly_energy.csv
+
+# Model artifacts (ignore large binary models >100MB; can be regenerated in 13 seconds)
+models/*
+!models/.gitkeep
+!models/README.md
+
+# Generated outputs
+outputs/figures/*
+!outputs/figures/.gitkeep
+!outputs/figures/*.png
+outputs/metrics/*
+!outputs/metrics/.gitkeep
+!outputs/metrics/*.json
+!outputs/README.md
+outputs/forecasts/*
+!outputs/forecasts/.gitkeep
+!outputs/forecasts/forecast_24h.csv
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDE & Editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

@@ -1,0 +1,203 @@
+{
+  "experiment_phase": "Phase 4A",
+  "model_type": "random_forest",
+  "random_state": 42,
+  "feature_columns": [
+    "hour",
+    "day_of_week",
+    "day_of_month",
+    "month",
+    "is_weekend",
+    "lag_1",
+    "lag_24",
+    "lag_168",
+    "rolling_mean_24"
+  ],
+  "target_column": "energy_kwh",
+  "split_summary": {
+    "total_rows": 34143,
+    "train_rows": 23900,
+    "val_rows": 5121,
+    "test_rows": 5122,
+    "train_ratio_achieved": 0.7,
+    "val_ratio_achieved": 0.15,
+    "test_ratio_achieved": 0.15,
+    "train_start": "2006-12-16 18:00:00",
+    "train_end": "2009-09-13 16:00:00",
+    "val_start": "2009-09-13 17:00:00",
+    "val_end": "2010-04-18 17:00:00",
+    "test_start": "2010-04-18 18:00:00",
+    "test_end": "2010-11-26 20:00:00"
+  },
+  "eligibility_audits": {
+    "train": {
+      "total_rows": 23900,
+      "eligible_rows": 23345,
+      "excluded_rows": 555,
+      "missing_target_count": 0,
+      "feature_missing_counts": {
+        "hour": 0,
+        "day_of_week": 0,
+        "day_of_month": 0,
+        "month": 0,
+        "is_weekend": 0,
+        "lag_1": 11,
+        "lag_24": 100,
+        "lag_168": 315,
+        "rolling_mean_24": 264
+      }
+    },
+    "validation": {
+      "total_rows": 5121,
+      "eligible_rows": 4985,
+      "excluded_rows": 136,
+      "missing_target_count": 0,
+      "feature_missing_counts": {
+        "hour": 0,
+        "day_of_week": 0,
+        "day_of_month": 0,
+        "month": 0,
+        "is_weekend": 0,
+        "lag_1": 2,
+        "lag_24": 48,
+        "lag_168": 88,
+        "rolling_mean_24": 48
+      }
+    },
+    "test": {
+      "total_rows": 5122,
+      "eligible_rows": 4865,
+      "excluded_rows": 257,
+      "missing_target_count": 0,
+      "feature_missing_counts": {
+        "hour": 0,
+        "day_of_week": 0,
+        "day_of_month": 0,
+        "month": 0,
+        "is_weekend": 0,
+        "lag_1": 2,
+        "lag_24": 48,
+        "lag_168": 209,
+        "rolling_mean_24": 48
+      }
+    }
+  },
+  "validation_evaluation": {
+    "total_partition_rows": 5121,
+    "common_scored_count": 4985,
+    "individual_evaluations": {
+      "Persistence (1h)": {
+        "model_name": "Persistence (1h)",
+        "total_rows": 5121,
+        "scored_samples": 5119,
+        "missing_predictions": 2,
+        "coverage_percentage": 99.96,
+        "mae": 0.467728,
+        "rmse": 0.696082,
+        "r2": 0.390007
+      },
+      "Seasonal Naive (24h)": {
+        "model_name": "Seasonal Naive (24h)",
+        "total_rows": 5121,
+        "scored_samples": 5073,
+        "missing_predictions": 48,
+        "coverage_percentage": 99.06,
+        "mae": 0.663933,
+        "rmse": 0.956798,
+        "r2": -0.148465
+      },
+      "Random Forest": {
+        "model_name": "Random Forest",
+        "total_rows": 5121,
+        "scored_samples": 4985,
+        "missing_predictions": 136,
+        "coverage_percentage": 97.34,
+        "mae": 0.387921,
+        "rmse": 0.559067,
+        "r2": 0.60652
+      }
+    },
+    "common_timestamp_evaluations": {
+      "Persistence (1h)": {
+        "model_name": "Persistence (1h)",
+        "scored_common_samples": 4985,
+        "mae": 0.467062,
+        "rmse": 0.69473,
+        "r2": 0.392386
+      },
+      "Seasonal Naive (24h)": {
+        "model_name": "Seasonal Naive (24h)",
+        "scored_common_samples": 4985,
+        "mae": 0.664738,
+        "rmse": 0.958607,
+        "r2": -0.156848
+      },
+      "Random Forest": {
+        "model_name": "Random Forest",
+        "scored_common_samples": 4985,
+        "mae": 0.387921,
+        "rmse": 0.559067,
+        "r2": 0.60652
+      }
+    }
+  },
+  "test_evaluation": {
+    "total_partition_rows": 5122,
+    "common_scored_count": 4865,
+    "individual_evaluations": {
+      "Persistence (1h)": {
+        "model_name": "Persistence (1h)",
+        "total_rows": 5122,
+        "scored_samples": 5120,
+        "missing_predictions": 2,
+        "coverage_percentage": 99.96,
+        "mae": 0.38606,
+        "rmse": 0.583938,
+        "r2": 0.323325
+      },
+      "Seasonal Naive (24h)": {
+        "model_name": "Seasonal Naive (24h)",
+        "total_rows": 5122,
+        "scored_samples": 5074,
+        "missing_predictions": 48,
+        "coverage_percentage": 99.06,
+        "mae": 0.511701,
+        "rmse": 0.760453,
+        "r2": -0.143294
+      },
+      "Random Forest": {
+        "model_name": "Random Forest",
+        "total_rows": 5122,
+        "scored_samples": 4865,
+        "missing_predictions": 257,
+        "coverage_percentage": 94.98,
+        "mae": 0.334389,
+        "rmse": 0.479144,
+        "r2": 0.539035
+      }
+    },
+    "common_timestamp_evaluations": {
+      "Persistence (1h)": {
+        "model_name": "Persistence (1h)",
+        "scored_common_samples": 4865,
+        "mae": 0.384382,
+        "rmse": 0.581998,
+        "r2": 0.319889
+      },
+      "Seasonal Naive (24h)": {
+        "model_name": "Seasonal Naive (24h)",
+        "scored_common_samples": 4865,
+        "mae": 0.50791,
+        "rmse": 0.754929,
+        "r2": -0.144326
+      },
+      "Random Forest": {
+        "model_name": "Random Forest",
+        "scored_common_samples": 4865,
+        "mae": 0.334389,
+        "rmse": 0.479144,
+        "r2": 0.539035
+      }
+    }
+  }
+}

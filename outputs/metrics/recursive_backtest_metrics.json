@@ -1,0 +1,93 @@
+{
+  "backtest_protocol": "Chronological rolling-origin evaluation without lookahead leakage",
+  "target_column": "energy_kwh",
+  "target_units": "kWh",
+  "model_evaluated": "random_forest",
+  "baseline_evaluated": "Persistence (Last Observed Value at Forecast Origin)",
+  "evaluation_partition": "Held-out test set (2010-04-18 to 2010-11-26, post-training)",
+  "origin_range": {
+    "requested_start": "2010-04-19 00:00:00",
+    "requested_end": "2010-11-24 00:00:00",
+    "first_eligible_origin": "2010-04-19 00:00:00",
+    "last_eligible_origin": "2010-11-24 00:00:00",
+    "origin_stride_hours": 72,
+    "window_overlap_policy": "Disjoint evaluation windows: 72h stride exceeds 48h max horizon, ensuring zero target timestamp overlap between successive origins."
+  },
+  "origin_accounting": {
+    "total_candidate_origins": 74,
+    "eligible_origins": 65,
+    "skipped_origins_total": 9,
+    "skipped_due_to_history_gaps": 7,
+    "skipped_due_to_target_gaps": 2
+  },
+  "horizons_evaluated": [
+    1,
+    6,
+    24,
+    48
+  ],
+  "horizon_metrics": {
+    "horizon_1h": {
+      "horizon_hours": 1,
+      "evaluated_origins": 65,
+      "unit": "kWh",
+      "random_forest": {
+        "mae": 0.175198,
+        "rmse": 0.27566
+      },
+      "persistence": {
+        "mae": 0.268084,
+        "rmse": 0.445063
+      },
+      "rf_mae_improvement_pct": 34.65
+    },
+    "horizon_6h": {
+      "horizon_hours": 6,
+      "evaluated_origins": 65,
+      "unit": "kWh",
+      "random_forest": {
+        "mae": 0.341715,
+        "rmse": 0.395659
+      },
+      "persistence": {
+        "mae": 0.445894,
+        "rmse": 0.663775
+      },
+      "rf_mae_improvement_pct": 23.36
+    },
+    "horizon_24h": {
+      "horizon_hours": 24,
+      "evaluated_origins": 65,
+      "unit": "kWh",
+      "random_forest": {
+        "mae": 0.364961,
+        "rmse": 0.609698
+      },
+      "persistence": {
+        "mae": 0.429319,
+        "rmse": 0.739222
+      },
+      "rf_mae_improvement_pct": 14.99
+    },
+    "horizon_48h": {
+      "horizon_hours": 48,
+      "evaluated_origins": 65,
+      "unit": "kWh",
+      "random_forest": {
+        "mae": 0.278315,
+        "rmse": 0.421633
+      },
+      "persistence": {
+        "mae": 0.397936,
+        "rmse": 0.640487
+      },
+      "rf_mae_improvement_pct": 30.06
+    }
+  },
+  "limitations": [
+    "Evaluated exclusively on a single French household dataset (2006-2010); findings cannot be generalized to commercial buildings or diverse climate zones.",
+    "Historical backtest results do not constitute live predictions for the present year (2026).",
+    "Recursive forecasting feeds step predictions into subsequent lag and rolling features; prediction errors naturally compound over extended horizons.",
+    "Requires 168 strictly contiguous historical hours; telemetry outages require fallback mechanisms in production."
+  ]
+}
